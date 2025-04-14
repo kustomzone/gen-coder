@@ -4,12 +4,12 @@ import {useState, useCallback, useRef} from 'react';
 import {Sandpack} from "@codesandbox/sandpack-react";
 import {Button} from "@/components/ui/button";
 import {Textarea} from "@/components/ui/textarea";
-import {toast} from "@/hooks/use-toast";
 import {useToast as useToastContext} from "@/hooks/use-toast";
 import {fixCodeBugs} from "@/ai/flows/fix-code-bugs";
 import {suggestCodeImprovements} from "@/ai/flows/suggest-code-improvements";
-import {Loader2, FileUp, Save, Sparkles, X} from "lucide-react";
+import {Loader2, FileUp, Save, Sparkles, Sun, Moon} from "lucide-react";
 import {AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction} from "@/components/ui/alert-dialog";
+import {useTheme} from 'next-themes';
 
 const initialHtmlContent = `
 <!DOCTYPE html>
@@ -32,6 +32,7 @@ export default function Home() {
   const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
   const [selectedCodeForAI, setSelectedCodeForAI] = useState<string | null>(null);
   const {toast} = useToastContext();
+  const {theme, setTheme} = useTheme();
 
   const handleCodeChange = useCallback((code: string) => {
     setHtmlCode(code);
@@ -164,7 +165,6 @@ export default function Home() {
         description: "The AI suggestion has been applied to your code.",
       });
       setAiSuggestions(null); // Clear suggestions after applying
-      setSelectedCodeForAI(null);
     }
   };
 
@@ -177,19 +177,15 @@ export default function Home() {
     });
   };
 
-  const codeMirrorOptions = {
-    lineWrapping: true,
-    lineNumbers: true,
-    mode: "htmlmixed",
-    theme: "material",
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="sticky top-0 bg-secondary p-4 shadow-md z-10">
         <div className="container mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold">CodeMuse</h1>
-          <div className="space-x-2">
+          <h1 className="text-xl font-bold">Autogen</h1>
+          <div className="space-x-2 flex items-center">
+            <Button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} variant="ghost" size="icon">
+              {theme === 'light' ? <Moon className="h-4 w-4"/> : <Sun className="h-4 w-4"/>}
+            </Button>
             <Button onClick={handleLoadFile} disabled={isProcessingAI}>
               <FileUp className="mr-2 h-4 w-4"/>
               Load HTML
@@ -207,7 +203,7 @@ export default function Home() {
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4"/>
-                  Get AI Suggestions
+                  Gen
                 </>
               )}
             </Button>
@@ -278,5 +274,3 @@ export default function Home() {
     </div>
   );
 }
-
-
