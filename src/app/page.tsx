@@ -2,7 +2,6 @@
 
 import {useState, useCallback, useRef} from 'react';
 import {Sandpack} from "@codesandbox/sandpack-react";
-import {useDebounce} from 'usehooks-ts';
 import {Button} from "@/components/ui/button";
 import {Textarea} from "@/components/ui/textarea";
 import {toast} from "@/hooks/use-toast";
@@ -38,20 +37,26 @@ export default function Home() {
     setHtmlCode(code);
   }, []);
 
-  const debouncedCode = useDebounce(htmlCode, 500);
+  const debouncedCode = htmlCode; // useDebounce(htmlCode, 500);
 
   const sandpackRef = useRef(null);
-  const {updateSandpack} = Sandpack.useSandpack();
+  const updateSandpack = useCallback((sandpack: any) => {
+    if (sandpackRef.current) {
+      sandpackRef.current.updateSandpack({
+        files: {
+          "/index.html": {
+            code: debouncedCode,
+          },
+        },
+      });
+    }
+  }, [debouncedCode]);
 
   // Update Sandpack code when debounced code changes
   useState(() => {
-    updateSandpack({
-      files: {
-        "/index.html": {
-          code: debouncedCode,
-        },
-      },
-    });
+    if(sandpackRef.current) {
+      updateSandpack(sandpackRef.current);
+    }
   }, [debouncedCode, updateSandpack]);
 
   const handleLoadFile = async () => {
@@ -223,6 +228,7 @@ export default function Home() {
           <h2 className="text-lg font-semibold mb-2">Live Preview</h2>
           <div className="overflow-hidden rounded-md border">
             <Sandpack
+              ref={sandpackRef}
               theme="dark"
               files={{
                 "/index.html": {code: htmlCode, active: true},
@@ -272,4 +278,5 @@ export default function Home() {
     </div>
   );
 }
+
 
