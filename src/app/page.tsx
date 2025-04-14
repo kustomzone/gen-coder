@@ -46,6 +46,9 @@ export default function Home() {
           "/index.html": {
             code: debouncedCode,
           },
+          "/index.js": {
+            code: `document.body.innerHTML = \`${debouncedCode}\`;`,
+          }
         },
       });
     }
@@ -182,7 +185,7 @@ export default function Home() {
           <h1 className="text-xl font-bold">Autogen</h1>
           <div className="space-x-2 flex items-center">
             <Button variant="ghost" size="icon">
-              <Moon className="h-4 w-4"/>
+              <Sun className="h-4 w-4"/>
             </Button>
             <Button onClick={handleLoadFile} disabled={isProcessingAI}>
               <FileUp className="mr-2 h-4 w-4"/>
@@ -225,7 +228,8 @@ export default function Home() {
               ref={sandpackRef}
               theme="dark"
               files={{
-                "/index.html": {code: htmlCode, active: true},
+                "/index.html": {code: htmlCode, active: false},
+                "/index.js": {code: `document.body.innerHTML = \`${debouncedCode}\`;`, active: true}
               }}
               options={{
                 readOnly: true,
