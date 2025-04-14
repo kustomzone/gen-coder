@@ -9,7 +9,6 @@ import {fixCodeBugs} from "@/ai/flows/fix-code-bugs";
 import {suggestCodeImprovements} from "@/ai/flows/suggest-code-improvements";
 import {Loader2, FileUp, Save, Sparkles, Sun, Moon} from "lucide-react";
 import {AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction} from "@/components/ui/alert-dialog";
-import {useTheme} from 'next-themes';
 
 const initialHtmlContent = `
 <!DOCTYPE html>
@@ -32,7 +31,6 @@ export default function Home() {
   const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
   const [selectedCodeForAI, setSelectedCodeForAI] = useState<string | null>(null);
   const {toast} = useToastContext();
-  const {theme, setTheme} = useTheme();
 
   const handleCodeChange = useCallback((code: string) => {
     setHtmlCode(code);
@@ -183,8 +181,8 @@ export default function Home() {
         <div className="container mx-auto flex items-center justify-between">
           <h1 className="text-xl font-bold">Autogen</h1>
           <div className="space-x-2 flex items-center">
-            <Button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} variant="ghost" size="icon">
-              {theme === 'light' ? <Moon className="h-4 w-4"/> : <Sun className="h-4 w-4"/>}
+            <Button variant="ghost" size="icon">
+              <Moon className="h-4 w-4"/>
             </Button>
             <Button onClick={handleLoadFile} disabled={isProcessingAI}>
               <FileUp className="mr-2 h-4 w-4"/>
