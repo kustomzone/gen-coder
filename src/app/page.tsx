@@ -7,8 +7,9 @@ import {Textarea} from "@/components/ui/textarea";
 import {useToast as useToastContext} from "@/hooks/use-toast";
 import {fixCodeBugs} from "@/ai/flows/fix-code-bugs";
 import {suggestCodeImprovements} from "@/ai/flows/suggest-code-improvements";
-import {Loader2, FileUp, Save, Sparkles, Sun, Moon} from "lucide-react";
+import {Loader2, FileUp, Save, Sparkles, Sun} from "lucide-react";
 import {AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction} from "@/components/ui/alert-dialog";
+import {useTheme} from "@/components/theme-provider";
 
 const initialHtmlContent = `
 <!DOCTYPE html>
@@ -30,7 +31,9 @@ export default function Home() {
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
   const [selectedCodeForAI, setSelectedCodeForAI] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState<string>(""); // Added AI prompt state
   const {toast} = useToastContext();
+  const {setTheme, theme} = useTheme();
 
   const handleCodeChange = useCallback((code: string) => {
     setHtmlCode(code);
@@ -39,27 +42,17 @@ export default function Home() {
   const debouncedCode = htmlCode; // useDebounce(htmlCode, 500);
 
   const sandpackRef = useRef(null);
-  const updateSandpack = useCallback((sandpack: any) => {
-    if (sandpackRef.current) {
-      sandpackRef.current.updateSandpack({
-        files: {
-          "/index.html": {
-            code: debouncedCode,
-          },
-          "/index.js": {
-            code: `document.body.innerHTML = \`${debouncedCode}\`;`,
-          }
-        },
-      });
-    }
-  }, [debouncedCode]);
 
   // Update Sandpack code when debounced code changes
   useState(() => {
     if(sandpackRef.current) {
-      updateSandpack(sandpackRef.current);
+      sandpackRef.current.updateSandpack({
+        files: {
+          "/index.html": {code: debouncedCode, active: true},
+        },
+      });
     }
-  }, [debouncedCode, updateSandpack]);
+  }, [debouncedCode]);
 
   const handleLoadFile = async () => {
     try {
@@ -184,8 +177,8 @@ export default function Home() {
         <div className="container mx-auto flex items-center justify-between">
           <h1 className="text-xl font-bold">Autogen</h1>
           <div className="space-x-2 flex items-center">
-            <Button variant="ghost" size="icon">
-              <Sun className="h-4 w-4"/>
+            <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+              {theme === 'dark' ? <Sun className="h-4 w-4"/> : <Sparkles className="h-4 w-4"/>}
             </Button>
             <Button onClick={handleLoadFile} disabled={isProcessingAI}>
               <FileUp className="mr-2 h-4 w-4"/>
@@ -195,19 +188,42 @@ export default function Home() {
               <Save className="mr-2 h-4 w-4"/>
               Save HTML
             </Button>
-            <Button onClick={handleGetAISuggestions} disabled={isProcessingAI}>
-              {isProcessingAI ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                  Suggesting...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4"/>
-                  Gen
-                </>
-              )}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button disabled={isProcessingAI}>
+                  {isProcessingAI ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                      Suggesting...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4"/>
+                      Gen
+                    </>
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Generate AI Suggestions</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Add a prompt to guide the AI suggestions.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <Textarea
+                  placeholder="Additional instructions for the AI"
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleGetAISuggestions}>
+                    Generate
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </header>
@@ -228,8 +244,7 @@ export default function Home() {
               ref={sandpackRef}
               theme="dark"
               files={{
-                "/index.html": {code: htmlCode, active: false},
-                "/index.js": {code: `document.body.innerHTML = \`${debouncedCode}\`;`, active: true}
+                "/index.html": {code: htmlCode, active: true},
               }}
               options={{
                 readOnly: true,
@@ -276,3 +291,16 @@ export default function Home() {
     </div>
   );
 }
+
+function AlertDialogFooter({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className="sm:flex w-full flex-row-reverse justify-end space-x-2 space-y-2 sm:space-x-0 sm:space-y-0"
+      {...props}
+    />
+  )
+}
+AlertDialogFooter.displayName = "AlertDialogFooter"
