@@ -7,12 +7,11 @@ import {Textarea} from "@/components/ui/textarea";
 import {useToast as useToastContext} from "@/hooks/use-toast";
 import {fixCodeBugs} from "@/ai/flows/fix-code-bugs";
 import {suggestCodeImprovements} from "@/ai/flows/suggest-code-improvements";
-import {Loader2, FileUp, Save, Sparkles, Sun} from "lucide-react";
+import {Loader2, FileUp, Save, Sparkles, Sun, Moon} from "lucide-react";
 import {AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction} from "@/components/ui/alert-dialog";
 import {useTheme} from "@/components/theme-provider";
 
-const initialHtmlContent = `
-<!DOCTYPE html>
+const initialHtmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -23,15 +22,14 @@ const initialHtmlContent = `
     <h1>Hello, world!</h1>
     <p>This is a paragraph.</p>
 </body>
-</html>
-`;
+</html>`;
 
 export default function Home() {
   const [htmlCode, setHtmlCode] = useState(initialHtmlContent);
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
   const [selectedCodeForAI, setSelectedCodeForAI] = useState<string | null>(null);
-  const [aiPrompt, setAiPrompt] = useState<string>(""); // Added AI prompt state
+  const [aiPrompt, setAiPrompt] = useState<string>("");
   const {toast} = useToastContext();
   const {setTheme, theme} = useTheme();
 
@@ -46,11 +44,11 @@ export default function Home() {
     }
   }, []);
 
+  // Update Sandpack code when debounced code changes
   const debouncedCode = htmlCode; // useDebounce(htmlCode, 500);
 
   const sandpackRef = useRef(null);
 
-  // Update Sandpack code when debounced code changes
   useState(() => {
     if(sandpackRef.current) {
       sandpackRef.current.updateSandpack({
@@ -84,6 +82,15 @@ export default function Home() {
 
       const file = await (await fileHandle[0].getFile()).text();
       setHtmlCode(file);
+
+      if(sandpackRef.current) {
+        sandpackRef.current.updateSandpack({
+          files: {
+            "/index.html": {code: file, active: true},
+          },
+        });
+      }
+
       toast({
         title: "File loaded",
         description: "The HTML file has been loaded successfully.",
@@ -186,6 +193,10 @@ export default function Home() {
     });
   };
 
+  const handleUpdateHtmlCode = (newCode: string) => {
+    setHtmlCode(newCode);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="sticky top-0 bg-secondary p-4 shadow-md z-10">
@@ -193,7 +204,7 @@ export default function Home() {
           <h1 className="text-xl font-bold">Autogen</h1>
           <div className="space-x-2 flex items-center">
             <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-              {theme === 'dark' ? <Sun className="h-4 w-4"/> : <Sparkles className="h-4 w-4"/>}
+              {theme === 'dark' ? <Sun className="h-4 w-4"/> : <Moon className="h-4 w-4"/>}
             </Button>
             <Button onClick={handleLoadFile} disabled={isProcessingAI}>
               <FileUp className="mr-2 h-4 w-4"/>
