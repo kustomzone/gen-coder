@@ -7,7 +7,7 @@ import {Textarea} from "@/components/ui/textarea";
 import {useToast as useToastContext} from "@/hooks/use-toast";
 import {fixCodeBugs} from "@/ai/flows/fix-code-bugs";
 import {suggestCodeImprovements} from "@/ai/flows/suggest-code-improvements";
-import {Loader2, FileUp, Save, Sparkles, Sun, Moon} from "lucide-react";
+import {Loader2, FileUp, Save, Sparkles, Sun, Moon, Brain} from "lucide-react";
 import {AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction} from "@/components/ui/alert-dialog";
 import {useTheme} from "@/components/theme-provider";
 
@@ -32,6 +32,8 @@ export default function Home() {
   const [aiPrompt, setAiPrompt] = useState<string>("");
   const {toast} = useToastContext();
   const {setTheme, theme} = useTheme();
+  const [isModelLoading, setIsModelLoading] = useState(false);
+  const [modelPath, setModelPath] = useState<string | null>(null);
 
   const handleCodeChange = useCallback((code: string) => {
     setHtmlCode(code);
@@ -168,13 +170,7 @@ export default function Home() {
   const applyAiSuggestion = () => {
     if (aiSuggestions) {
       setHtmlCode(aiSuggestions);
-      if(sandpackRef.current) {
-        sandpackRef.current.updateSandpack({
-          files: {
-            "/index.html": {code: aiSuggestions, active: true},
-          },
-        });
-      }
+      handleCodeChange(aiSuggestions);
 
       toast({
         title: "AI suggestion applied",
@@ -193,8 +189,49 @@ export default function Home() {
     });
   };
 
-  const handleUpdateHtmlCode = (newCode: string) => {
-    setHtmlCode(newCode);
+  const handleLoadModel = async () => {
+    setIsModelLoading(true);
+    try {
+      const fileHandle = await window.showOpenFilePicker({
+        types: [
+          {
+            description: "GGUF Model Files",
+            accept: {
+              "application/octet-stream": [".gguf"],
+            },
+          },
+        ],
+      });
+
+      if (fileHandle.length === 0) {
+        toast({
+          title: "No model selected",
+          description: "Please select a GGUF model file.",
+        });
+        return;
+      }
+
+      const file = await fileHandle[0].getFile();
+      const path = file.name; // Or any other relevant identifier
+
+      setModelPath(path);
+
+      toast({
+        title: "Model loaded",
+        description: `The model ${path} has been loaded.`,
+      });
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+        return;
+      }
+      toast({
+        variant: "destructive",
+        title: "Error loading model",
+        description: e.message,
+      });
+    } finally {
+      setIsModelLoading(false);
+    }
   };
 
   return (
@@ -206,17 +243,30 @@ export default function Home() {
             <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
               {theme === 'dark' ? <Sun className="h-4 w-4"/> : <Moon className="h-4 w-4"/>}
             </Button>
-            <Button onClick={handleLoadFile} disabled={isProcessingAI}>
+            <Button onClick={handleLoadFile} disabled={isProcessingAI || isModelLoading}>
               <FileUp className="mr-2 h-4 w-4"/>
               Load HTML
             </Button>
-            <Button onClick={handleSaveFile} disabled={isProcessingAI}>
+             <Button onClick={handleLoadModel} disabled={isProcessingAI || isModelLoading}>
+              {isModelLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                  Loading Model...
+                </>
+              ) : (
+                <>
+                  <Brain className="mr-2 h-4 w-4"/>
+                  Load Model
+                </>
+              )}
+            </Button>
+            <Button onClick={handleSaveFile} disabled={isProcessingAI || isModelLoading}>
               <Save className="mr-2 h-4 w-4"/>
               Save HTML
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button disabled={isProcessingAI}>
+                <Button disabled={isProcessingAI || isModelLoading}>
                   {isProcessingAI ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
@@ -295,22 +345,25 @@ export default function Home() {
               <pre className="whitespace-pre-wrap">{aiSuggestions}</pre>
             </div>
             <div className="space-x-2">
-              <Button variant="secondary" onClick={applyAiSuggestion}>
+              <Button variant="secondary" onClick={applyAiSuggestion} disabled={isProcessingAI || isModelLoading}>
                 Apply Suggestion
               </Button>
-              <Button variant="destructive" onClick={handleCancelAI}>
+              <Button variant="destructive" onClick={handleCancelAI} disabled={isProcessingAI || isModelLoading}>
                 Cancel
               </Button>
             </div>
           </div>
         </div>
       )}
-      {isProcessingAI && (
+      {(isProcessingAI || isModelLoading) && (
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-secondary p-6 rounded-md shadow-lg z-30 flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin"/>
-          <p>AI is processing your code...</p>
-          <Button variant="destructive" onClick={handleCancelAI}>
+          <p>{isProcessingAI ? "AI is processing your code..." : "Loading GGUF Model..."}</p>
+          <Button variant="destructive" onClick={handleCancelAI} disabled={!isProcessingAI}>
             Cancel AI Processing
+          </Button>
+           <Button variant="destructive" onClick={handleLoadModel} disabled={isProcessingAI}>
+            Cancel Model Loading
           </Button>
         </div>
       )}
