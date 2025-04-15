@@ -37,6 +37,13 @@ export default function Home() {
 
   const handleCodeChange = useCallback((code: string) => {
     setHtmlCode(code);
+    if(sandpackRef.current) {
+      sandpackRef.current.updateSandpack({
+        files: {
+          "/index.html": {code: code, active: true},
+        },
+      });
+    }
   }, []);
 
   const debouncedCode = htmlCode; // useDebounce(htmlCode, 500);
@@ -131,7 +138,7 @@ export default function Home() {
     setAiSuggestions(null);
 
     try {
-      const result = await (selectedCodeForAI ? fixCodeBugs({htmlCode, selectedCode: selectedCodeForAI}) : suggestCodeImprovements({htmlCode}));
+      const result = await (selectedCodeForAI ? fixCodeBugs({htmlCode, selectedCode: selectedCodeForAI + aiPrompt}) : suggestCodeImprovements({htmlCode: htmlCode + aiPrompt}));
 
       setAiSuggestions(result?.improvedCode || result?.fixedCodeSuggestions || "No suggestions found.");
       toast({
@@ -154,6 +161,14 @@ export default function Home() {
   const applyAiSuggestion = () => {
     if (aiSuggestions) {
       setHtmlCode(aiSuggestions);
+      if(sandpackRef.current) {
+        sandpackRef.current.updateSandpack({
+          files: {
+            "/index.html": {code: aiSuggestions, active: true},
+          },
+        });
+      }
+
       toast({
         title: "AI suggestion applied",
         description: "The AI suggestion has been applied to your code.",

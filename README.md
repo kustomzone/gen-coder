@@ -1,5 +1,3 @@
-# Firebase Studio
+### Autogen
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+Self-editing code editor test
